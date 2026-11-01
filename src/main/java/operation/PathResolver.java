@@ -57,9 +57,7 @@ public final class PathResolver {
             throw new IllegalArgumentException("The output directory does not exist.");
         }
 
-        String outputName = encrypt
-                ? OutputNameResolver.forEncryption(input.getFileName().toString())
-                : OutputNameResolver.forDecryption(input.getFileName().toString());
+        String outputName = encrypt ? OutputNameResolver.forEncryption(input.getFileName().toString()) : OutputNameResolver.forDecryption(input.getFileName().toString());
         Path output = directory.resolve(outputName).normalize();
 
         if (output.equals(input)) {

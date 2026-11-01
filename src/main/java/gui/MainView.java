@@ -140,35 +140,35 @@ public class MainView extends VBox {
             return;
         }
 
-        String password = passwordView.password();
-        if (password.isEmpty()) {
-            showValidationError("Please enter a password.");
-            return;
-        }
-        if (encrypt && !password.equals(passwordView.confirmation())) {
-            showValidationError("Passwords do not match.");
-            return;
-        }
-
-        final Path output;
+        char[] password = passwordView.password();
+        char[] confirmation = passwordView.confirmation();
         try {
-            output = pathResolver.resolveOutput(
-                    input, pathSelectionView.outputDirectoryText(), encrypt, separate
-            );
-        } catch (IllegalArgumentException exception) {
-            showValidationError(exception.getMessage());
-            return;
-        }
+            if (password.length == 0) {
+                showValidationError("Please enter a password.");
+                return;
+            }
+            if (encrypt && !Arrays.equals(password, confirmation)) {
+                showValidationError("Passwords do not match.");
+                return;
+            }
 
-        if (encrypt && !separate && !confirmReplacement(input)) {
-            return;
-        }
+            final Path output;
+            try {
+                output = pathResolver.resolveOutput(
+                        input, pathSelectionView.outputDirectoryText(), encrypt, separate
+                );
+            } catch (IllegalArgumentException exception) {
+                showValidationError(exception.getMessage());
+                return;
+            }
 
-        char[] passwordChars = password.toCharArray();
-        SaveMode saveMode = separate ? SaveMode.SEPARATE_FILE : SaveMode.REPLACE_ORIGINAL;
-        showProgress(encrypt ? "Encrypting file..." : "Decrypting file...");
+            if (encrypt && !separate && !confirmReplacement(input)) {
+                return;
+            }
 
-        try {
+            SaveMode saveMode = separate ? SaveMode.SEPARATE_FILE : SaveMode.REPLACE_ORIGINAL;
+            showProgress(encrypt ? "Encrypting file..." : "Decrypting file...");
+
             OperationCallbacks callbacks = new OperationCallbacks(
                     progressView::appendMessage,
                     progressView::appendError,
@@ -176,15 +176,16 @@ public class MainView extends VBox {
                     this::operationFinished
             );
             if (encrypt) {
-                handler.encrypt(input, output, passwordChars, saveMode, callbacks);
+                handler.encrypt(input, output, password, saveMode, callbacks);
             } else {
-                handler.decrypt(input, output, passwordChars, saveMode, callbacks);
+                handler.decrypt(input, output, password, saveMode, callbacks);
             }
         } catch (RuntimeException exception) {
             progressView.appendError("Could not start operation: " + safeMessage(exception));
             operationFinished();
         } finally {
-            Arrays.fill(passwordChars, '\0');
+            Arrays.fill(password, '\0');
+            Arrays.fill(confirmation, '\0');
         }
     }
 
@@ -198,6 +199,7 @@ public class MainView extends VBox {
     private void operationFinished() {
         progressView.finish();
         pathSelectionView.clear();
+        passwordView.clear();
     }
 
     private void setFormVisible(boolean visible) {

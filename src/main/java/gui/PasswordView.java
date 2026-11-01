@@ -7,6 +7,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import java.util.Arrays;
+
 public class PasswordView extends VBox {
 
     private final PasswordField passwordField = new PasswordField();
@@ -44,16 +46,23 @@ public class PasswordView extends VBox {
         );
     }
 
-    public String password() {
+    public char[] password() {
         return visiblePasswordField.isVisible()
-                ? visiblePasswordField.getText()
-                : passwordField.getText();
+                ? visiblePasswordField.getText().toCharArray()
+                : passwordField.getText().toCharArray();
     }
 
-    public String confirmation() {
+    public char[] confirmation() {
         return visibleConfirmationField.isVisible()
-                ? visibleConfirmationField.getText()
-                : confirmationField.getText();
+                ? visibleConfirmationField.getText().toCharArray()
+                : confirmationField.getText().toCharArray();
+    }
+
+    public void clear() {
+        passwordField.clear();
+        confirmationField.clear();
+        visiblePasswordField.clear();
+        visibleConfirmationField.clear();
     }
 
     public void setConfirmationEnabled(boolean enabled) {
