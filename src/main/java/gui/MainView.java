@@ -45,8 +45,7 @@ public class MainView extends VBox {
 
         configureForm();
         progressView.setBackRequested(this::showForm);
-        getChildren().setAll(buildHeading(), operationSelector(), pathSelectionView,
-                saveSection(), passwordView, actionButton, progressView);
+        getChildren().setAll(buildHeading(), operationSelector(), pathSelectionView, saveSection(), passwordView, actionButton, progressView);
     }
 
     private void configureForm() {
@@ -62,12 +61,8 @@ public class MainView extends VBox {
         VBox.setMargin(actionButton, new Insets(8, 0, 2, 0));
         actionButton.setOnAction(event -> performOperation());
 
-        operationGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            updateOperationMode();
-            handleOperationChanged();
-        });
-        saveGroup.selectedToggleProperty()
-                .addListener((observable, oldValue, newValue) -> updateSaveMode());
+        operationGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {updateOperationMode();handleOperationChanged();});
+        saveGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> updateSaveMode());
         updateOperationMode();
         updateSaveMode();
     }
@@ -142,6 +137,7 @@ public class MainView extends VBox {
 
         char[] password = passwordView.password();
         char[] confirmation = passwordView.confirmation();
+
         try {
             if (password.length == 0) {
                 showValidationError("Please enter a password.");
@@ -154,9 +150,7 @@ public class MainView extends VBox {
 
             final Path output;
             try {
-                output = pathResolver.resolveOutput(
-                        input, pathSelectionView.outputDirectoryText(), encrypt, separate
-                );
+                output = pathResolver.resolveOutput(input, pathSelectionView.outputDirectoryText(), encrypt, separate);
             } catch (IllegalArgumentException exception) {
                 showValidationError(exception.getMessage());
                 return;
@@ -169,12 +163,8 @@ public class MainView extends VBox {
             SaveMode saveMode = separate ? SaveMode.SEPARATE_FILE : SaveMode.REPLACE_ORIGINAL;
             showProgress(encrypt ? "Encrypting file..." : "Decrypting file...");
 
-            OperationCallbacks callbacks = new OperationCallbacks(
-                    progressView::appendMessage,
-                    progressView::appendError,
-                    progressView::updateProgress,
-                    this::operationFinished
-            );
+            OperationCallbacks callbacks = new OperationCallbacks(progressView::appendMessage, progressView::appendError, progressView::updateProgress, this::operationFinished);
+
             if (encrypt) {
                 handler.encrypt(input, output, password, saveMode, callbacks);
             } else {
@@ -203,9 +193,7 @@ public class MainView extends VBox {
     }
 
     private void setFormVisible(boolean visible) {
-        getChildren().stream()
-                .filter(child -> child != progressView)
-                .forEach(child -> {
+        getChildren().stream().filter(child -> child != progressView).forEach(child -> {
                     child.setVisible(visible);
                     child.setManaged(visible);
                 });
@@ -217,8 +205,7 @@ public class MainView extends VBox {
         alert.setHeaderText("Cannot start operation");
         alert.setContentText(message);
         alert.initOwner(getStage());
-        alert.getDialogPane().getStylesheets()
-                .add(getClass().getResource("/style.css").toExternalForm());
+        alert.getDialogPane().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         alert.getDialogPane().getStyleClass().add("error-alert");
         alert.showAndWait();
     }
@@ -227,15 +214,10 @@ public class MainView extends VBox {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("");
         alert.setHeaderText("Original data will be replaced");
-        alert.setContentText(
-                "After successful encryption, the original "
-                        + (Files.isDirectory(input) ? "folder and its contents" : "file")
-                        + " will be permanently deleted. Continue?"
-        );
+        alert.setContentText("After successful encryption, the original " + (Files.isDirectory(input) ? "folder and its contents" : "file") + " will be permanently deleted. Continue?");
         alert.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
         alert.initOwner(getStage());
-        alert.getDialogPane().getStylesheets()
-                .add(getClass().getResource("/style.css").toExternalForm());
+        alert.getDialogPane().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         alert.getDialogPane().getStyleClass().add("warning-alert");
 
         Optional<ButtonType> result = alert.showAndWait();
@@ -250,9 +232,7 @@ public class MainView extends VBox {
 
     private String safeMessage(Throwable throwable) {
         String message = throwable.getMessage();
-        return message == null || message.isBlank()
-                ? throwable.getClass().getSimpleName()
-                : message;
+        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
     }
 
     private Stage getStage() {

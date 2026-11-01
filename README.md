@@ -1,4 +1,4 @@
-# File Encryptor
+# Cryptly
 
 A small desktop application for encrypting and decrypting files and directories. It is written in Java with JavaFX and works locally.
 <br>

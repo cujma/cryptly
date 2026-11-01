@@ -7,17 +7,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-import java.util.Arrays;
-
 public class PasswordView extends VBox {
-
     private final PasswordField passwordField = new PasswordField();
     private final PasswordField confirmationField = new PasswordField();
     private final TextField visiblePasswordField = new TextField();
     private final TextField visibleConfirmationField = new TextField();
-    private final CheckBox showPassword = new CheckBox("Show password");
 
     public PasswordView() {
+        CheckBox showPassword = new CheckBox("Show password");
         setSpacing(8);
         setMaxWidth(Double.MAX_VALUE);
         getStyleClass().add("form-section");
@@ -38,24 +35,15 @@ public class PasswordView extends VBox {
 
         Label title = new Label("Password");
         title.getStyleClass().add("section-title");
-        getChildren().addAll(
-                title,
-                new VBox(9, new StackPane(passwordField, visiblePasswordField),
-                        new StackPane(confirmationField, visibleConfirmationField)),
-                showPassword
-        );
+        getChildren().addAll(title, new VBox(9, new StackPane(passwordField, visiblePasswordField), new StackPane(confirmationField, visibleConfirmationField)), showPassword);
     }
 
     public char[] password() {
-        return visiblePasswordField.isVisible()
-                ? visiblePasswordField.getText().toCharArray()
-                : passwordField.getText().toCharArray();
+        return visiblePasswordField.isVisible() ? visiblePasswordField.getText().toCharArray() : passwordField.getText().toCharArray();
     }
 
     public char[] confirmation() {
-        return visibleConfirmationField.isVisible()
-                ? visibleConfirmationField.getText().toCharArray()
-                : confirmationField.getText().toCharArray();
+        return visibleConfirmationField.isVisible() ? visibleConfirmationField.getText().toCharArray() : confirmationField.getText().toCharArray();
     }
 
     public void clear() {

@@ -4,10 +4,10 @@ import operation.FileOperationHandler;
 import operation.FileOperationService;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-
     private final FileOperationHandler handler = new FileOperationService();
 
     @Override
@@ -17,7 +17,10 @@ public class Main extends Application {
         Scene scene = new Scene(view, 440, 640);
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 
-        stage.setTitle("");
+        stage.getIcons().add(
+                new Image(getClass().getResourceAsStream("/icon.png"))
+        );
+        stage.setTitle("Cryptly");
         stage.setMinWidth(420);
         stage.setMinHeight(640);
         stage.setResizable(false);

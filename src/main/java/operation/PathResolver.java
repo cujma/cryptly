@@ -18,14 +18,10 @@ public final class PathResolver {
         }
 
         if ((!Files.isRegularFile(input) && !Files.isDirectory(input)) || !Files.isReadable(input)) {
-            throw new IllegalArgumentException(
-                    "The input file or directory does not exist or cannot be read."
-            );
+            throw new IllegalArgumentException("The input file or directory does not exist or cannot be read.");
         }
         if (!encrypt && Files.isDirectory(input)) {
-            throw new IllegalArgumentException(
-                    "To decrypt a directory, select its encrypted .enc file."
-            );
+            throw new IllegalArgumentException("To decrypt a directory, select its encrypted .enc file.");
         }
         return input;
     }
@@ -67,8 +63,7 @@ public final class PathResolver {
             output = OutputNameResolver.nextRestoredDirectory(output);
         }
         if (Files.exists(output)) {
-            throw new IllegalArgumentException(
-                    "The output file already exists. Choose another directory."
+            throw new IllegalArgumentException("The output file already exists. Choose another directory."
             );
         }
         return output;
