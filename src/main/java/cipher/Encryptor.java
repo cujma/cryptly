@@ -34,8 +34,7 @@ public class Encryptor extends FileCipher {
         });
     }
 
-    public void encrypt(char[] password, SaveMode saveMode, DoubleConsumer progress)
-            throws IOException, GeneralSecurityException {
+    public void encrypt(char[] password, SaveMode saveMode, DoubleConsumer progress) throws IOException, GeneralSecurityException {
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(saveMode, "Save mode cannot be null");
         Objects.requireNonNull(progress, "Progress callback cannot be null");
@@ -90,9 +89,7 @@ public class Encryptor extends FileCipher {
                     }
 
                     counter++;
-                    progress.accept(totalBytes == 0
-                            ? 1.0
-                            : Math.min(1.0, (double) processedBytes / totalBytes));
+                    progress.accept(totalBytes == 0 ? 1.0 : Math.min(1.0, (double) processedBytes / totalBytes));
                 }
 
                 if (counter > 0xFFFF_FFFFL) {
@@ -150,7 +147,6 @@ public class Encryptor extends FileCipher {
         try {
             cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
 
-            // Binding the counter and plaintext length prevents block reordering or resizing.
             cipher.updateAAD(header);
             cipher.updateAAD(intToBytes((int) counter));
             cipher.updateAAD(intToBytes(length));

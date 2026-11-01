@@ -1,4 +1,4 @@
-package gui;
+package operation;
 
 import cipher.Decryptor;
 import cipher.DirectoryArchive;
@@ -6,14 +6,16 @@ import cipher.Encryptor;
 import cipher.PayloadType;
 import cipher.SaveMode;
 import javafx.concurrent.Task;
-
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.DoubleConsumer;
 
 public final class FileOperationService implements FileOperationHandler {
     private enum Operation {
@@ -33,6 +35,30 @@ public final class FileOperationService implements FileOperationHandler {
         start(input, output, password, saveMode, Operation.DECRYPT, callbacks);
     }
 
+    void executeSynchronously(Path input, Path output, char[] password,
+                              SaveMode saveMode, boolean encrypt)
+            throws IOException, GeneralSecurityException {
+        Objects.requireNonNull(input, "Input path cannot be null");
+        Objects.requireNonNull(output, "Output path cannot be null");
+        Objects.requireNonNull(password, "Password cannot be null");
+        Objects.requireNonNull(saveMode, "Save mode cannot be null");
+
+        char[] passwordChars = password.clone();
+        try {
+            executeOperation(
+                    input,
+                    output,
+                    passwordChars,
+                    saveMode,
+                    encrypt ? Operation.ENCRYPT : Operation.DECRYPT,
+                    progress -> {
+                    }
+            );
+        } finally {
+            Arrays.fill(passwordChars, '\0');
+        }
+    }
+
     private void start(Path input, Path output, char[] password, SaveMode saveMode,
                        Operation operation, OperationCallbacks callbacks) {
         Objects.requireNonNull(input, "Input path cannot be null");
@@ -49,7 +75,7 @@ public final class FileOperationService implements FileOperationHandler {
                 try {
                     updateMessage(startMessage(operation));
 
-                    runCipher(input, output, passwordChars, saveMode, operation,
+                    executeOperation(input, output, passwordChars, saveMode, operation,
                             progress -> updateProgress(progress, 1.0));
                     return null;
                 } finally {
@@ -73,11 +99,7 @@ public final class FileOperationService implements FileOperationHandler {
 
         task.setOnFailed(event -> {
             Throwable error = task.getException();
-            callbacks.onError().accept(error == null
-                    ? "An unknown error occurred."
-                    : error.getMessage() == null
-                    ? error.getClass().getSimpleName()
-                    : error.getMessage());
+            callbacks.onError().accept(errorMessage(error));
             callbacks.onFinished().run();
         });
 
@@ -100,8 +122,18 @@ public final class FileOperationService implements FileOperationHandler {
                 : "Decryption completed successfully.";
     }
 
-    private void runCipher(Path input, Path output, char[] password, SaveMode saveMode,
-                           Operation operation, java.util.function.DoubleConsumer progress)
+    private String errorMessage(Throwable error) {
+        if (error == null) {
+            return "An unknown error occurred.";
+        }
+        if (error.getMessage() == null || error.getMessage().isBlank()) {
+            return error.getClass().getSimpleName();
+        }
+        return error.getMessage();
+    }
+
+    private void executeOperation(Path input, Path output, char[] password, SaveMode saveMode,
+                                  Operation operation, DoubleConsumer progress)
             throws IOException, GeneralSecurityException {
         if (operation == Operation.DECRYPT && !Files.isRegularFile(input)) {
             throw new IOException("To decrypt a directory, select its encrypted .enc file.");
@@ -194,14 +226,14 @@ public final class FileOperationService implements FileOperationHandler {
             return;
         }
         try (var paths = Files.walk(directory)) {
-            paths.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
                     Files.deleteIfExists(path);
                 } catch (IOException exception) {
-                    throw new java.io.UncheckedIOException(exception);
+                    throw new UncheckedIOException(exception);
                 }
             });
-        } catch (java.io.UncheckedIOException exception) {
+        } catch (UncheckedIOException exception) {
             throw exception.getCause();
         }
     }

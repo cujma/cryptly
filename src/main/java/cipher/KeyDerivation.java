@@ -21,7 +21,6 @@ public final class KeyDerivation {
     }
 
     public static SecretKey deriveKey(char[] password, byte[] salt) throws GeneralSecurityException {
-
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(salt, "Salt cannot be null");
 

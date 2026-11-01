@@ -1,4 +1,4 @@
-package gui;
+package operation;
 
 import java.util.Objects;
 import java.util.function.Consumer;

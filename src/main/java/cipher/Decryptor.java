@@ -37,8 +37,7 @@ public class Decryptor extends FileCipher {
         });
     }
 
-    public void decrypt(char[] password, SaveMode saveMode, DoubleConsumer progress)
-            throws IOException, GeneralSecurityException {
+    public void decrypt(char[] password, SaveMode saveMode, DoubleConsumer progress) throws IOException, GeneralSecurityException {
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(saveMode, "Save mode cannot be null");
         Objects.requireNonNull(progress, "Progress callback cannot be null");
@@ -70,11 +69,9 @@ public class Decryptor extends FileCipher {
                 offset += SALT_LENGTH;
 
                 noncePrefix = Arrays.copyOfRange(header, offset, offset + NONCE_PREFIX_LENGTH);
-
                 SecretKey key = KeyDerivation.deriveKey(password, salt);
 
-                try (DataOutputStream output = new DataOutputStream(
-                        new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
+                try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
                     long counter = 0;
 
                     while (true) {
@@ -187,9 +184,7 @@ public class Decryptor extends FileCipher {
             return cipher.doFinal(encrypted);
 
         } catch (AEADBadTagException e) {
-            throw new AEADBadTagException(
-                    "Authentication failed. The password may be incorrect " + "or the encrypted file may be damaged."
-            );
+            throw new AEADBadTagException("Authentication failed. The password may be incorrect");
         } finally {
             Arrays.fill(nonce, (byte) 0);
         }

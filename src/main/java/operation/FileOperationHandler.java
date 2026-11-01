@@ -1,8 +1,6 @@
-
-package gui;
+package operation;
 
 import cipher.SaveMode;
-
 import java.nio.file.Path;
 
 public interface FileOperationHandler {

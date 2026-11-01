@@ -1,5 +1,7 @@
 package cipher;
 
+import java.io.IOException;
+
 public enum PayloadType {
     FILE((byte) 1),
     DIRECTORY((byte) 2);
@@ -10,13 +12,13 @@ public enum PayloadType {
         this.code = code;
     }
 
-    static PayloadType fromCode(byte code) throws java.io.IOException {
+    static PayloadType fromCode(byte code) throws IOException {
         for (PayloadType type : values()) {
             if (type.code == code) {
                 return type;
             }
         }
-        throw new java.io.IOException("Unsupported encrypted payload type.");
+        throw new IOException("Unsupported encrypted payload type.");
     }
 
     byte code() {

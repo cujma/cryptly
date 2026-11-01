@@ -101,9 +101,7 @@ public final class DirectoryArchive {
         }
 
         Path target = root.resolve(relative).normalize();
-        if (!target.startsWith(root)
-                || Files.isSymbolicLink(target)
-                || hasSymbolicLinkParent(root, target)) {
+        if (!target.startsWith(root) || Files.isSymbolicLink(target) || hasSymbolicLinkParent(root, target)) {
             throw new IOException("Archive contains an unsafe path.");
         }
         return target;
