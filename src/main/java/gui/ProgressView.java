@@ -41,6 +41,7 @@ public class ProgressView extends VBox {
         Label messagesTitle = new Label("Errors and messages");
         messagesTitle.getStyleClass().add("section-title");
         backButton.setMaxWidth(Double.MAX_VALUE);
+        backButton.getStyleClass().add("menu-button");
         backButton.setDisable(true);
         backButton.setOnAction(event -> backRequested.run());
 

@@ -31,6 +31,9 @@ public class PathSelectionView extends VBox {
         outputDirectoryField.setPromptText("Output directory...");
 
         Button fileButton = new Button("File");
+        fileButton.getStyleClass().add("menu-button");
+        folderButton.getStyleClass().add("menu-button");
+        outputDirectoryButton.getStyleClass().add("menu-button");
         fileButton.setOnAction(event -> chooseInputFile());
         folderButton.setOnAction(event -> chooseInputDirectory());
         outputDirectoryButton.setOnAction(event -> chooseOutputDirectory());

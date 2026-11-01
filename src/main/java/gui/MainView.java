@@ -31,9 +31,10 @@ public class MainView extends VBox {
     private final ToggleGroup saveGroup = new ToggleGroup();
     private final RadioButton encryptButton = new RadioButton("Encrypt");
     private final RadioButton decryptButton = new RadioButton("Decrypt");
+    private final Label operationTitle = new Label();
     private final RadioButton replaceOriginal = new RadioButton("Replace original file");
     private final RadioButton saveNew = new RadioButton("Save as a new file");
-    private final Button actionButton = new Button("Encrypt file");
+    private final Button actionButton = new Button("Encrypt");
 
     public MainView(FileOperationHandler handler) {
         this.handler = handler;
@@ -68,9 +69,8 @@ public class MainView extends VBox {
     }
 
     private VBox buildHeading() {
-        Label title = new Label("Protect your data");
-        title.getStyleClass().add("title");
-        VBox heading = new VBox(title);
+        operationTitle.getStyleClass().add("title");
+        VBox heading = new VBox(operationTitle);
         heading.setAlignment(Pos.CENTER);
         return heading;
     }
@@ -102,7 +102,8 @@ public class MainView extends VBox {
 
     private void updateOperationMode() {
         boolean encrypt = isEncryptSelected();
-        actionButton.setText(encrypt ? "Encrypt file" : "Decrypt file");
+        operationTitle.setText(encrypt ? "Encrypt your data" : "Decrypt your data");
+        actionButton.setText(encrypt ? "Encrypt" : "Decrypt");
         passwordView.setConfirmationEnabled(encrypt);
         pathSelectionView.setFolderSelectionEnabled(encrypt);
     }
@@ -245,13 +246,14 @@ public class MainView extends VBox {
         panel.getChildren().add(1, separator);
         VBox.setMargin(separator, new Insets(-10, 0, -5, 0));
         panel.getStyleClass().add("dialog-panel");
-        panel.setPrefWidth(430);
+        panel.setPrefWidth(340);
 
         Stage dialog = new Stage(StageStyle.TRANSPARENT);
         dialog.initOwner(getStage());
         dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
         WindowFrame frame = new WindowFrame(dialog, "Cryptly", panel, false);
-        frame.setPrefWidth(460);
+        frame.getStyleClass().add("dialog-window-frame");
+        frame.setPrefWidth(370);
         Scene scene = new Scene(frame);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
