@@ -6,23 +6,23 @@ import operation.OperationCallbacks;
 import operation.PathResolver;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Separator;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Optional;
 
 public class MainView extends VBox {
-
     private final FileOperationHandler handler;
+    private boolean operationRunning;
     private final PathSelectionView pathSelectionView = new PathSelectionView();
     private final PasswordView passwordView = new PasswordView();
     private final ProgressView progressView = new ProgressView();
@@ -180,6 +180,7 @@ public class MainView extends VBox {
     }
 
     private void showProgress(String title) {
+        operationRunning = true;
         progressView.start(title);
         setFormVisible(false);
         progressView.setVisible(true);
@@ -187,6 +188,7 @@ public class MainView extends VBox {
     }
 
     private void operationFinished() {
+        operationRunning = false;
         progressView.finish();
         pathSelectionView.clear();
         passwordView.clear();
@@ -200,28 +202,74 @@ public class MainView extends VBox {
     }
 
     private void showValidationError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("");
-        alert.setHeaderText("Cannot start operation");
-        alert.setContentText(message);
-        alert.initOwner(getStage());
-        alert.getDialogPane().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        alert.getDialogPane().getStyleClass().add("error-alert");
-        alert.showAndWait();
+        Stage dialog = createDialog("Cannot start operation", message);
+        Button close = dialogButton("OK", dialog);
+        HBox buttons = new HBox(close);
+        buttons.getStyleClass().add("dialog-buttons");
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+        dialogContent(dialog).getChildren().add(buttons);
+        dialog.showAndWait();
     }
 
     private boolean confirmReplacement(Path input) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("");
-        alert.setHeaderText("Original data will be replaced");
-        alert.setContentText("After successful encryption, the original " + (Files.isDirectory(input) ? "folder and its contents" : "file") + " will be permanently deleted. Continue?");
-        alert.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
-        alert.initOwner(getStage());
-        alert.getDialogPane().getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        alert.getDialogPane().getStyleClass().add("warning-alert");
+        Stage dialog = createDialog("Original data will be replaced", "After successful encryption, the original " + (Files.isDirectory(input) ? "folder and its contents" : "file") + " will be permanently deleted.");
+        HBox buttons = new HBox(8);
+        buttons.getStyleClass().add("dialog-buttons");
+        Button cancel = dialogButton("Cancel", dialog);
+        Button confirm = dialogButton("Continue", dialog);
+        final boolean[] accepted = {false};
+        confirm.setOnAction(event -> {
+            accepted[0] = true;
+            dialog.close();
+        });
+        buttons.getChildren().addAll(cancel, confirm);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+        dialogContent(dialog).getChildren().add(buttons);
+        dialog.showAndWait();
 
-        Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == ButtonType.OK;
+        return accepted[0];
+    }
+
+    private Stage createDialog(String title, String message) {
+        Label heading = new Label(title);
+        heading.getStyleClass().add("dialog-heading");
+        heading.setAlignment(Pos.CENTER_LEFT);
+        heading.setMaxWidth(Double.MAX_VALUE);
+        Label content = new Label(message);
+        content.getStyleClass().add("dialog-content");
+        content.setWrapText(true);
+        content.setMaxWidth(Double.MAX_VALUE);
+        Separator separator = new Separator();
+        separator.getStyleClass().add("dialog-separator");
+        VBox panel = new VBox(12, heading, content);
+        panel.getChildren().add(1, separator);
+        VBox.setMargin(separator, new Insets(-10, 0, -5, 0));
+        panel.getStyleClass().add("dialog-panel");
+        panel.setPrefWidth(430);
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initOwner(getStage());
+        dialog.initModality(javafx.stage.Modality.WINDOW_MODAL);
+        WindowFrame frame = new WindowFrame(dialog, "Cryptly", panel, false);
+        frame.setPrefWidth(460);
+        Scene scene = new Scene(frame);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        dialog.setScene(scene);
+        dialog.sizeToScene();
+        return dialog;
+    }
+
+    private Button dialogButton(String text, Stage dialog) {
+        Button button = new Button(text);
+        button.getStyleClass().add("dialog-button");
+        button.setOnAction(event -> dialog.close());
+
+        return button;
+    }
+
+    private VBox dialogContent(Stage dialog) {
+        return (VBox) ((WindowFrame) dialog.getScene().getRoot()).getCenter();
     }
 
     private void showForm() {
@@ -237,5 +285,9 @@ public class MainView extends VBox {
 
     private Stage getStage() {
         return (Stage) getScene().getWindow();
+    }
+
+    public boolean isOperationRunning() {
+        return operationRunning;
     }
 }
