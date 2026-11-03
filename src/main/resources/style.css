@@ -18,6 +18,11 @@
     -fx-border-color: #2c3544;
     -fx-border-width: 1px;
     -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+}
+
+.dialog-window-frame .dialog-panel {
+    -fx-background-radius: 0 0 8px 8px;
 }
 
 .title-bar {
@@ -243,6 +248,24 @@
     -fx-effect: none;
 }
 
+.progress-view .menu-button:hover {
+    -fx-background-color: #242832;
+    -fx-border-color: #5794ff;
+}
+
+.progress-view .progress-messages {
+    -fx-border-color: #2c313c;
+}
+
+.progress-view .progress-messages:hover,
+.progress-view .progress-section:hover {
+    -fx-border-color: #3a4351;
+}
+
+.progress-view .progress-messages .text-area:focused {
+    -fx-border-color: #2c313c;
+}
+
 .button:disabled {
     -fx-opacity: 0.5;
 }
@@ -338,11 +361,14 @@
     -fx-background-color: #151922;
     -fx-border-color: #2c313c;
     -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
 }
 
 .error-alert .header-panel {
     -fx-background-color: #191c23;
     -fx-padding: 16px 18px 12px 18px;
+    -fx-background-radius: 8px 8px 0 0;
 }
 
 .error-alert .header-panel .label {
@@ -364,6 +390,7 @@
 .error-alert .button-bar {
     -fx-background-color: #151922;
     -fx-padding: 4px 12px 12px 12px;
+    -fx-background-radius: 0 0 8px 8px;
 }
 
 .error-alert .button {

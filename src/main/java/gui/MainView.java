@@ -12,6 +12,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -45,6 +46,7 @@ public class MainView extends VBox {
         setPadding(new Insets(18, 20, 4, 20));
 
         configureForm();
+        VBox.setVgrow(progressView, Priority.ALWAYS);
         progressView.setBackRequested(this::showForm);
         getChildren().setAll(buildHeading(), operationSelector(), pathSelectionView, saveSection(), passwordView, actionButton, progressView);
     }

@@ -1,5 +1,6 @@
 package gui;
 
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -10,7 +11,7 @@ import javafx.scene.layout.VBox;
 
 public class ProgressView extends VBox {
 
-    private final Label progressTitle = new Label("Processing file...");
+    private final Label operationTitle = new Label("Processing file...");
     private final Label status = new Label("Preparing operation...");
     private final ProgressBar progressBar = new ProgressBar();
     private final TextArea messagesArea = new TextArea();
@@ -19,17 +20,22 @@ public class ProgressView extends VBox {
     };
 
     public ProgressView() {
-        setSpacing(16);
+        getStyleClass().add("progress-view");
+        setSpacing(10);
         setAlignment(Pos.TOP_CENTER);
         setFillWidth(true);
         setVisible(false);
         setManaged(false);
 
-        progressTitle.getStyleClass().add("section-title");
+        operationTitle.getStyleClass().add("title");
         status.getStyleClass().add("status-label");
         status.setWrapText(true);
         progressBar.setMaxWidth(Double.MAX_VALUE);
         progressBar.setPrefHeight(14);
+
+        VBox progressSection = new VBox(8, progressBar, status);
+        progressSection.getStyleClass().addAll("form-section", "progress-section");
+        progressSection.setMaxWidth(Double.MAX_VALUE);
 
         messagesArea.setEditable(false);
         messagesArea.setWrapText(true);
@@ -40,14 +46,20 @@ public class ProgressView extends VBox {
 
         Label messagesTitle = new Label("Errors and messages");
         messagesTitle.getStyleClass().add("section-title");
+        VBox messagesSection = new VBox(8, messagesTitle, messagesArea);
+        messagesSection.getStyleClass().addAll("form-section", "progress-messages");
+        messagesSection.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(messagesSection, Priority.ALWAYS);
+        VBox.setMargin(messagesSection, new Insets(0, 0, 0, 0));
+
         backButton.setMaxWidth(Double.MAX_VALUE);
         backButton.getStyleClass().add("menu-button");
         backButton.setDisable(true);
         backButton.setOnAction(event -> backRequested.run());
+        VBox.setMargin(backButton, new Insets(8, 0, 16, 0));
 
         getChildren().setAll(
-                heading(), progressTitle, progressBar, status,
-                messagesTitle, messagesArea, backButton
+                heading(), progressSection, messagesSection, backButton
         );
     }
 
@@ -56,10 +68,10 @@ public class ProgressView extends VBox {
     }
 
     public void start(String title) {
-        progressTitle.setText(title);
+        operationTitle.setText(title);
         status.setText("Please wait...");
         messagesArea.clear();
-        messagesArea.appendText("Operation started.\n");
+        messagesArea.appendText("[INFO] Operation started.\n");
         progressBar.setProgress(0);
         backButton.setDisable(true);
     }
@@ -87,11 +99,7 @@ public class ProgressView extends VBox {
     }
 
     private VBox heading() {
-        Label title = new Label("Protect your data");
-        title.getStyleClass().add("title");
-        Label subtitle = new Label("Your operation is in progress");
-        subtitle.getStyleClass().add("subtitle");
-        VBox heading = new VBox(6, title, subtitle);
+        VBox heading = new VBox(operationTitle);
         heading.setAlignment(Pos.CENTER);
         return heading;
     }
