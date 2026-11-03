@@ -132,7 +132,7 @@ public final class FileOperationService implements FileOperationHandler {
             return;
         }
 
-        if (operation == Operation.DECRYPT && (saveMode == SaveMode.SEPARATE_FILE || input.getFileName().toString().endsWith(".enc"))) {
+        if (operation == Operation.DECRYPT) {
             Path temporaryDirectory = Files.createTempDirectory(output.getParent(), ".file-archive-");
             Path archive = temporaryDirectory.resolve("content.zip");
             Path restored = Files.createTempDirectory(output.getParent(), ".file-restored-");
@@ -150,13 +150,12 @@ public final class FileOperationService implements FileOperationHandler {
                         Files.delete(input);
                     }
                 } else {
-                    if (saveMode == SaveMode.SEPARATE_FILE) {
-                        if (Files.exists(output)) {
-                            throw new IOException("Output file already exists: " + output);
-                        }
-                        Files.move(archive, output);
-                    } else {
-                        Files.move(archive, input, StandardCopyOption.REPLACE_EXISTING);
+                    if (Files.exists(output)) {
+                        throw new IOException("Output file already exists: " + output);
+                    }
+                    Files.move(archive, output);
+                    if (saveMode == SaveMode.REPLACE_ORIGINAL) {
+                        Files.delete(input);
                     }
                 }
             } finally {

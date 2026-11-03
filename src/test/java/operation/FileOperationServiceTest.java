@@ -49,4 +49,25 @@ class FileOperationServiceTest {
         assertFalse(Files.exists(source));
         assertTrue(Files.exists(encrypted));
     }
+
+    @Test
+    void decryptingWithReplacementRemovesEncExtension() throws Exception {
+        Path source = Files.createFile(tempDir.resolve("notes.txt"));
+        Files.writeString(source, "hello");
+        Path encrypted = tempDir.resolve("notes.txt.enc");
+
+        FileOperationService service = new FileOperationService();
+        service.executeSynchronously(source, encrypted, PASSWORD, SaveMode.SEPARATE_FILE, true);
+        Files.delete(source);
+        service.executeSynchronously(
+                encrypted,
+                tempDir.resolve("notes.txt"),
+                PASSWORD,
+                SaveMode.REPLACE_ORIGINAL,
+                false
+        );
+
+        assertFalse(Files.exists(encrypted));
+        assertEquals("hello", Files.readString(source));
+    }
 }

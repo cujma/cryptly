@@ -32,6 +32,23 @@ class PathResolverTest {
     }
 
     @Test
+    void rejectsEncryptingAlreadyEncryptedFile() throws IOException {
+        Path input = Files.createFile(tempDir.resolve("notes.txt.enc"));
+        Files.write(input, new byte[]{'F', 'E', 'N', 'C', 'S', 'T', 'R', 'M'});
+
+        assertThrows(IllegalArgumentException.class,
+                () -> resolver.resolveInput(input.toString(), true));
+    }
+
+    @Test
+    void allowsRegularFileWithEncExtension() throws IOException {
+        Path input = tempDir.resolve("notes.txt.enc");
+        Files.writeString(input, "regular file");
+
+        assertEquals(input.toAbsolutePath(), resolver.resolveInput(input.toString(), true));
+    }
+
+    @Test
     void createsEncryptedNameForSeparateOutput() throws IOException {
         Path input = Files.createFile(tempDir.resolve("notes.txt"));
 
@@ -65,5 +82,15 @@ class PathResolverTest {
         Path input = Files.createFile(tempDir.resolve("notes.txt"));
 
         assertEquals(input, resolver.resolveOutput(input, "", true, false));
+    }
+
+    @Test
+    void removesEncryptedExtensionWhenReplacingWithDecryptedFile() throws IOException {
+        Path input = Files.createFile(tempDir.resolve("notes.txt.enc"));
+
+        assertEquals(
+                tempDir.resolve("notes.txt"),
+                resolver.resolveOutput(input, "", false, false)
+        );
     }
 }

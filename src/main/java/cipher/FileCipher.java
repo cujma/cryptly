@@ -1,10 +1,12 @@
 package cipher;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Objects;
 
 public abstract class FileCipher {
@@ -25,6 +27,12 @@ public abstract class FileCipher {
         this.inputPath = Objects.requireNonNull(inputPath, "Input path cannot be null").toAbsolutePath().normalize();
         this.outputPath = Objects.requireNonNull(outputPath, "Output path cannot be null").toAbsolutePath().normalize();
 
+    }
+
+    public static boolean hasEncryptedMagic(Path path) throws IOException {
+        try (InputStream input = Files.newInputStream(path)) {
+            return Arrays.equals(input.readNBytes(MAGIC.length), MAGIC);
+        }
     }
 
     protected void validateInput() throws IOException {

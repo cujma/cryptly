@@ -1,5 +1,7 @@
 package operation;
 
+import cipher.FileCipher;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -20,6 +22,15 @@ public final class PathResolver {
         if ((!Files.isRegularFile(input) && !Files.isDirectory(input)) || !Files.isReadable(input)) {
             throw new IllegalArgumentException("The input file or directory does not exist or cannot be read.");
         }
+        if (encrypt && Files.isRegularFile(input)) {
+            try {
+                if (FileCipher.hasEncryptedMagic(input)) {
+                    throw new IllegalArgumentException("The selected file is already encrypted.");
+                }
+            } catch (java.io.IOException exception) {
+                throw new IllegalArgumentException("The input file or directory does not exist or cannot be read.", exception);
+            }
+        }
         if (!encrypt && Files.isDirectory(input)) {
             throw new IllegalArgumentException("To decrypt a directory, select its encrypted .enc file.");
         }
@@ -32,6 +43,15 @@ public final class PathResolver {
                 Path output = input.resolveSibling(input.getFileName() + ".enc");
                 if (Files.exists(output)) {
                     throw new IllegalArgumentException("The encrypted output already exists.");
+                }
+                return output;
+            }
+            if (!encrypt) {
+                Path output = input.resolveSibling(
+                        OutputNameResolver.forDecryption(input.getFileName().toString())
+                );
+                if (Files.exists(output)) {
+                    throw new IllegalArgumentException("The decrypted output already exists.");
                 }
                 return output;
             }

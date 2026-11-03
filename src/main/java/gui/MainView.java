@@ -108,6 +108,10 @@ public class MainView extends VBox {
         actionButton.setText(encrypt ? "Encrypt" : "Decrypt");
         passwordView.setConfirmationEnabled(encrypt);
         pathSelectionView.setFolderSelectionEnabled(encrypt);
+        saveNew.setDisable(!encrypt);
+        if (!encrypt) {
+            replaceOriginal.setSelected(true);
+        }
     }
 
     private void updateSaveMode() {
