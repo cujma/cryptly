@@ -7,42 +7,42 @@ import java.nio.file.Path;
 
 public final class PathResolver {
 
-    public Path resolveInput(String inputText, boolean encrypt) {
+    public Path resolveInput(String inputText, boolean encrypt) throws java.io.IOException {
         if (inputText.isBlank()) {
-            throw new IllegalArgumentException("Please select an input file.");
+            throw OperationException.validation(OperationErrorCode.INPUT_REQUIRED);
         }
 
         final Path input;
         try {
             input = Path.of(inputText).toAbsolutePath().normalize();
         } catch (RuntimeException exception) {
-            throw new IllegalArgumentException("The input file path is invalid.", exception);
+            throw OperationException.validation(OperationErrorCode.INVALID_INPUT_PATH);
         }
 
         if ((!Files.isRegularFile(input) && !Files.isDirectory(input)) || !Files.isReadable(input)) {
-            throw new IllegalArgumentException("The input file or directory does not exist or cannot be read.");
+            throw OperationException.validation(OperationErrorCode.INPUT_NOT_ACCESSIBLE);
         }
         if (encrypt && Files.isRegularFile(input)) {
             try {
                 if (FileCipher.hasEncryptedMagic(input)) {
-                    throw new IllegalArgumentException("The selected file is already encrypted.");
+                    throw OperationException.validation(OperationErrorCode.ALREADY_ENCRYPTED);
                 }
             } catch (java.io.IOException exception) {
-                throw new IllegalArgumentException("The input file or directory does not exist or cannot be read.", exception);
+                throw OperationException.validation(OperationErrorCode.INPUT_NOT_ACCESSIBLE);
             }
         }
         if (!encrypt && Files.isDirectory(input)) {
-            throw new IllegalArgumentException("To decrypt a directory, select its encrypted .enc file.");
+            throw OperationException.validation(OperationErrorCode.DIRECTORY_CANNOT_BE_DECRYPTED);
         }
         return input;
     }
 
-    public Path resolveOutput(Path input, String outputDirectoryText, boolean encrypt, boolean separate) {
+    public Path resolveOutput(Path input, String outputDirectoryText, boolean encrypt, boolean separate) throws java.io.IOException {
         if (!separate) {
             if (Files.isDirectory(input)) {
                 Path output = input.resolveSibling(input.getFileName() + ".enc");
                 if (Files.exists(output)) {
-                    throw new IllegalArgumentException("The encrypted output already exists.");
+                    throw OperationException.validation(OperationErrorCode.ENCRYPTED_OUTPUT_EXISTS);
                 }
                 return output;
             }
@@ -51,7 +51,7 @@ public final class PathResolver {
                         OutputNameResolver.forDecryption(input.getFileName().toString())
                 );
                 if (Files.exists(output)) {
-                    throw new IllegalArgumentException("The decrypted output already exists.");
+                    throw OperationException.validation(OperationErrorCode.DECRYPTED_OUTPUT_EXISTS);
                 }
                 return output;
             }
@@ -59,32 +59,31 @@ public final class PathResolver {
         }
 
         if (outputDirectoryText.isBlank()) {
-            throw new IllegalArgumentException("Please select an output directory.");
+            throw OperationException.validation(OperationErrorCode.OUTPUT_DIRECTORY_REQUIRED);
         }
 
         final Path directory;
         try {
             directory = Path.of(outputDirectoryText).toAbsolutePath().normalize();
         } catch (RuntimeException exception) {
-            throw new IllegalArgumentException("The output directory path is invalid.", exception);
+            throw OperationException.validation(OperationErrorCode.INVALID_OUTPUT_DIRECTORY);
         }
 
         if (!Files.isDirectory(directory)) {
-            throw new IllegalArgumentException("The output directory does not exist.");
+            throw OperationException.validation(OperationErrorCode.OUTPUT_DIRECTORY_NOT_FOUND);
         }
 
         String outputName = encrypt ? OutputNameResolver.forEncryption(input.getFileName().toString()) : OutputNameResolver.forDecryption(input.getFileName().toString());
         Path output = directory.resolve(outputName).normalize();
 
         if (output.equals(input)) {
-            throw new IllegalArgumentException("Input and output files must be different.");
+            throw OperationException.validation(OperationErrorCode.INPUT_OUTPUT_MUST_DIFFER);
         }
         if (!encrypt && Files.isDirectory(output)) {
             output = OutputNameResolver.nextRestoredDirectory(output);
         }
         if (Files.exists(output)) {
-            throw new IllegalArgumentException("The output file already exists. Choose another directory."
-            );
+            throw OperationException.validation(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
         }
         return output;
     }

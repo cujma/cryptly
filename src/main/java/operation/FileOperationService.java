@@ -63,7 +63,18 @@ public final class FileOperationService implements FileOperationHandler {
                 try {
                     updateMessage(startMessage(operation));
 
-                    executeOperation(input, output, passwordChars, saveMode, operation, progress -> updateProgress(progress, 1.0));
+                    try {
+                        executeOperation(input, output, passwordChars, saveMode, operation, progress -> updateProgress(progress, 1.0));
+                    } catch (OperationException exception) {
+                        throw exception;
+                    } catch (IOException | GeneralSecurityException exception) {
+                        throw new OperationException(
+                                operation == Operation.DECRYPT
+                                        ? OperationErrorCode.INVALID_ENCRYPTED_FILE
+                                        : OperationErrorCode.UNKNOWN_ERROR,
+                                exception
+                        );
+                    }
                     return null;
                 } finally {
                     Arrays.fill(passwordChars, '\0');
@@ -104,18 +115,15 @@ public final class FileOperationService implements FileOperationHandler {
     }
 
     private String errorMessage(Throwable error) {
-        if (error == null) {
-            return "An unknown error occurred.";
+        if (error instanceof OperationException operationException) {
+            return operationException.code().name();
         }
-        if (error.getMessage() == null || error.getMessage().isBlank()) {
-            return error.getClass().getSimpleName();
-        }
-        return error.getMessage();
+        return OperationErrorCode.UNKNOWN_ERROR.name();
     }
 
     private void executeOperation(Path input, Path output, char[] password, SaveMode saveMode, Operation operation, DoubleConsumer progress) throws IOException, GeneralSecurityException {
         if (operation == Operation.DECRYPT && !Files.isRegularFile(input)) {
-            throw new IOException("To decrypt a directory, select its encrypted .enc file.");
+            throw new OperationException(OperationErrorCode.DIRECTORY_CANNOT_BE_DECRYPTED);
         }
 
         if (operation == Operation.ENCRYPT && Files.isDirectory(input)) {
@@ -143,7 +151,7 @@ public final class FileOperationService implements FileOperationHandler {
                     DirectoryArchive.extract(archive, restored);
                     Path directoryOutput = saveMode == SaveMode.SEPARATE_FILE ? output : directoryOutput(input);
                     if (Files.exists(directoryOutput)) {
-                        throw new IOException("Output directory already exists: " + directoryOutput);
+                        throw new OperationException(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
                     }
                     moveDirectory(restored, directoryOutput);
                     if (saveMode == SaveMode.REPLACE_ORIGINAL) {
@@ -151,7 +159,7 @@ public final class FileOperationService implements FileOperationHandler {
                     }
                 } else {
                     if (Files.exists(output)) {
-                        throw new IOException("Output file already exists: " + output);
+                        throw new OperationException(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
                     }
                     Files.move(archive, output);
                     if (saveMode == SaveMode.REPLACE_ORIGINAL) {
@@ -177,11 +185,11 @@ public final class FileOperationService implements FileOperationHandler {
     private Path directoryOutput(Path encryptedFile) throws IOException {
         String name = encryptedFile.getFileName().toString();
         if (!name.endsWith(".enc")) {
-            throw new IOException("Encrypted directory must have the .enc extension.");
+            throw new OperationException(OperationErrorCode.INVALID_ENCRYPTED_FILE);
         }
         String directoryName = name.substring(0, name.length() - ".enc".length());
         if (directoryName.isBlank()) {
-            throw new IOException("Encrypted directory has an invalid name.");
+            throw new OperationException(OperationErrorCode.INVALID_ENCRYPTED_FILE);
         }
         return encryptedFile.resolveSibling(directoryName);
     }

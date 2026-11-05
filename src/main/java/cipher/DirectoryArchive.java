@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import operation.OperationErrorCode;
+import operation.OperationException;
 
 public final class DirectoryArchive {
     private DirectoryArchive() {
@@ -21,7 +23,7 @@ public final class DirectoryArchive {
     public static void create(Path directory, Path archive) throws IOException {
         Path root = directory.toAbsolutePath().normalize();
         if (!Files.isDirectory(root) || Files.isSymbolicLink(root)) {
-            throw new IOException("Input directory is not accessible.");
+            throw new OperationException(OperationErrorCode.DIRECTORY_NOT_ACCESSIBLE);
         }
 
         try (OutputStream output = Files.newOutputStream(archive);
@@ -30,7 +32,7 @@ public final class DirectoryArchive {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (Files.isSymbolicLink(file) || !attrs.isRegularFile()) {
-                        throw new IOException("Symbolic links and special files are not supported.");
+                        throw new OperationException(OperationErrorCode.UNSUPPORTED_DIRECTORY_CONTENT);
                     }
                     addFile(root, file, zip);
                     return FileVisitResult.CONTINUE;
@@ -67,18 +69,18 @@ public final class DirectoryArchive {
             while ((entry = zip.getNextEntry()) != null) {
                 Path target = safeTarget(root, entry.getName());
                 if (!extracted.add(target)) {
-                    throw new IOException("Archive contains duplicate entries.");
+                    throw new OperationException(OperationErrorCode.ARCHIVE_DUPLICATE_ENTRY);
                 }
 
                 if (entry.isDirectory()) {
                     if (Files.exists(target) && !Files.isDirectory(target)) {
-                        throw new IOException("Archive contains conflicting entries.");
+                        throw new OperationException(OperationErrorCode.ARCHIVE_CONFLICTING_ENTRY);
                     }
                     Files.createDirectories(target);
                 } else {
                     Path parent = target.getParent();
                     if (parent == null || Files.exists(target)) {
-                        throw new IOException("Archive contains conflicting entries.");
+                        throw new OperationException(OperationErrorCode.ARCHIVE_CONFLICTING_ENTRY);
                     }
                     Files.createDirectories(parent);
                     try (OutputStream output = Files.newOutputStream(target)) {
@@ -92,17 +94,17 @@ public final class DirectoryArchive {
 
     private static Path safeTarget(Path root, String entryName) throws IOException {
         if (entryName == null || entryName.isBlank() || entryName.indexOf('\0') >= 0) {
-            throw new IOException("Archive contains an invalid path.");
+            throw new OperationException(OperationErrorCode.ARCHIVE_INVALID_PATH);
         }
 
         Path relative = Path.of(entryName);
         if (relative.isAbsolute()) {
-            throw new IOException("Archive contains an unsafe path.");
+            throw new OperationException(OperationErrorCode.ARCHIVE_UNSAFE_PATH);
         }
 
         Path target = root.resolve(relative).normalize();
         if (!target.startsWith(root) || Files.isSymbolicLink(target) || hasSymbolicLinkParent(root, target)) {
-            throw new IOException("Archive contains an unsafe path.");
+            throw new OperationException(OperationErrorCode.ARCHIVE_UNSAFE_PATH);
         }
         return target;
     }

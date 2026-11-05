@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import operation.OperationErrorCode;
+import operation.OperationException;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
 
@@ -71,7 +73,7 @@ public class Encryptor extends FileCipher {
                     processedBytes += length;
 
                     if (counter > 0xFFFF_FFFFL) {
-                        throw new IOException("Maximum number of encrypted chunks exceeded.");
+                        throw new OperationException(OperationErrorCode.TOO_MANY_BLOCKS);
                     }
 
                     byte[] plaintext = Arrays.copyOf(buffer, length);
@@ -93,7 +95,7 @@ public class Encryptor extends FileCipher {
                 }
 
                 if (counter > 0xFFFF_FFFFL) {
-                    throw new IOException("Maximum number of encrypted chunks exceeded.");
+                    throw new OperationException(OperationErrorCode.TOO_MANY_BLOCKS);
                 }
 
                 byte[] finalTag = null;

@@ -1,7 +1,7 @@
 
 import gui.MainView;
 import gui.WindowFrame;
-import operation.FileOperationHandler;
+import operation.FileOperationController;
 import operation.FileOperationService;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -11,11 +11,12 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 public class Main extends Application {
-    private final FileOperationHandler handler = new FileOperationService();
+    private final FileOperationController operationController =
+            new FileOperationController(new FileOperationService());
 
     @Override
     public void start(Stage stage) {
-        MainView view = new MainView(handler);
+        MainView view = new MainView(operationController);
 
         Scene scene = new Scene(new WindowFrame(stage, view), 440, 672);
         scene.setFill(Color.TRANSPARENT);

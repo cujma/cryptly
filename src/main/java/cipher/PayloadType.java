@@ -1,6 +1,8 @@
 package cipher;
 
 import java.io.IOException;
+import operation.OperationErrorCode;
+import operation.OperationException;
 
 public enum PayloadType {
     FILE((byte) 1),
@@ -18,7 +20,7 @@ public enum PayloadType {
                 return type;
             }
         }
-        throw new IOException("Unsupported encrypted payload type.");
+        throw new OperationException(OperationErrorCode.UNSUPPORTED_PAYLOAD);
     }
 
     byte code() {

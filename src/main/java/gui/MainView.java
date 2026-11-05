@@ -1,9 +1,7 @@
 package gui;
 
-import cipher.SaveMode;
-import operation.FileOperationHandler;
+import operation.FileOperationController;
 import operation.OperationCallbacks;
-import operation.PathResolver;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -22,12 +20,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 public class MainView extends VBox {
-    private final FileOperationHandler handler;
+    private final FileOperationController operationController;
+    private final ErrorMessageProvider errorMessageProvider = new ErrorMessageProvider();
     private boolean operationRunning;
     private final PathSelectionView pathSelectionView = new PathSelectionView();
     private final PasswordView passwordView = new PasswordView();
     private final ProgressView progressView = new ProgressView();
-    private final PathResolver pathResolver = new PathResolver();
     private final ToggleGroup operationGroup = new ToggleGroup();
     private final ToggleGroup saveGroup = new ToggleGroup();
     private final RadioButton encryptButton = new RadioButton("Encrypt");
@@ -37,8 +35,8 @@ public class MainView extends VBox {
     private final RadioButton saveNew = new RadioButton("Save as a new file");
     private final Button actionButton = new Button("Encrypt");
 
-    public MainView(FileOperationHandler handler) {
-        this.handler = handler;
+    public MainView(FileOperationController operationController) {
+        this.operationController = operationController;
         getStyleClass().add("main-view");
         setAlignment(Pos.TOP_CENTER);
         setFillWidth(true);
@@ -120,11 +118,7 @@ public class MainView extends VBox {
 
     private void handleOperationChanged() {
         if (!isEncryptSelected() && !pathSelectionView.inputText().isBlank()) {
-            try {
-                if (Files.isDirectory(Path.of(pathSelectionView.inputText()))) {
-                    pathSelectionView.clear();
-                }
-            } catch (RuntimeException exception) {
+            if (operationController.isDirectory(pathSelectionView.inputText())) {
                 pathSelectionView.clear();
             }
         }
@@ -134,51 +128,37 @@ public class MainView extends VBox {
         boolean encrypt = isEncryptSelected();
         boolean separate = isSaveNewSelected();
 
-        final Path input;
-        try {
-            input = pathResolver.resolveInput(pathSelectionView.inputText(), encrypt);
-        } catch (IllegalArgumentException exception) {
-            showValidationError(exception.getMessage());
-            return;
-        }
-
         char[] password = passwordView.password();
         char[] confirmation = passwordView.confirmation();
 
         try {
-            if (password.length == 0) {
-                showValidationError("Please enter a password.");
+            OperationCallbacks callbacks = new OperationCallbacks(
+                    progressView::appendMessage,
+                    message -> progressView.appendError(errorMessageProvider.messageFor(message)),
+                    progressView::updateProgress,
+                    this::operationFinished
+            );
+            FileOperationController.PreparedOperation operation = operationController.prepare(
+                    pathSelectionView.inputText(),
+                    pathSelectionView.outputDirectoryText(),
+                    encrypt,
+                    separate,
+                    password,
+                    confirmation,
+                    this::confirmReplacement
+            );
+            if (operation == null) {
                 return;
             }
-            if (encrypt && !Arrays.equals(password, confirmation)) {
-                showValidationError("Passwords do not match.");
-                return;
-            }
-
-            final Path output;
-            try {
-                output = pathResolver.resolveOutput(input, pathSelectionView.outputDirectoryText(), encrypt, separate);
-            } catch (IllegalArgumentException exception) {
-                showValidationError(exception.getMessage());
-                return;
-            }
-
-            if (encrypt && !separate && !confirmReplacement(input)) {
-                return;
-            }
-
-            SaveMode saveMode = separate ? SaveMode.SEPARATE_FILE : SaveMode.REPLACE_ORIGINAL;
             showProgress(encrypt ? "Encrypting file..." : "Decrypting file...");
-
-            OperationCallbacks callbacks = new OperationCallbacks(progressView::appendMessage, progressView::appendError, progressView::updateProgress, this::operationFinished);
-
-            if (encrypt) {
-                handler.encrypt(input, output, password, saveMode, callbacks);
-            } else {
-                handler.decrypt(input, output, password, saveMode, callbacks);
+            operationController.start(operation, password, callbacks);
+        } catch (Exception exception) {
+            if (exception instanceof operation.OperationException
+                    || exception instanceof IllegalArgumentException) {
+                showValidationError(errorMessageProvider.messageFor(exception));
+                return;
             }
-        } catch (RuntimeException exception) {
-            progressView.appendError("Could not start operation: " + safeMessage(exception));
+            progressView.appendError(errorMessageProvider.messageFor(exception));
             operationFinished();
         } finally {
             Arrays.fill(password, '\0');
@@ -284,11 +264,6 @@ public class MainView extends VBox {
         progressView.setVisible(false);
         progressView.setManaged(false);
         setFormVisible(true);
-    }
-
-    private String safeMessage(Throwable throwable) {
-        String message = throwable.getMessage();
-        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
     }
 
     private Stage getStage() {

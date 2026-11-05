@@ -4,9 +4,12 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Objects;
+import operation.OperationErrorCode;
+import operation.OperationException;
 
 public final class KeyDerivation {
 
@@ -20,16 +23,16 @@ public final class KeyDerivation {
     private KeyDerivation() {
     }
 
-    public static SecretKey deriveKey(char[] password, byte[] salt) throws GeneralSecurityException {
+    public static SecretKey deriveKey(char[] password, byte[] salt) throws GeneralSecurityException, IOException {
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(salt, "Salt cannot be null");
 
         if (password.length == 0) {
-            throw new IllegalArgumentException("Password cannot be empty.");
+            throw operation.OperationException.validation(OperationErrorCode.INVALID_PASSWORD);
         }
 
         if (salt.length != SALT_LENGTH) {
-            throw new IllegalArgumentException("Salt must be exactly " + SALT_LENGTH + " bytes long.");
+            throw operation.OperationException.validation(OperationErrorCode.INVALID_SALT);
         }
 
         PBEKeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, KEY_LENGTH_BITS);

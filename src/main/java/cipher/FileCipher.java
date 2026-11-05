@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Objects;
+import operation.OperationErrorCode;
+import operation.OperationException;
 
 public abstract class FileCipher {
     protected static final String ALGORITHM = "AES/GCM/NoPadding";
@@ -37,15 +39,15 @@ public abstract class FileCipher {
 
     protected void validateInput() throws IOException {
         if (!Files.exists(inputPath)) {
-            throw new IOException("Input file does not exist: " + inputPath);
+            throw new OperationException(OperationErrorCode.INPUT_FILE_MISSING);
         }
 
         if (!Files.isRegularFile(inputPath)) {
-            throw new IOException("Input path is not a regular file: " + inputPath);
+            throw new OperationException(OperationErrorCode.INPUT_NOT_REGULAR_FILE);
         }
 
         if (!Files.isReadable(inputPath)) {
-            throw new IOException("Input file is not readable: " + inputPath);
+            throw new OperationException(OperationErrorCode.INPUT_NOT_ACCESSIBLE);
         }
     }
 
@@ -56,11 +58,11 @@ public abstract class FileCipher {
         Path parent = outputPath.getParent();
 
         if (parent == null || !Files.isDirectory(parent)) {
-            throw new IOException("Output directory does not exist.");
+            throw new OperationException(OperationErrorCode.OUTPUT_DIRECTORY_MISSING);
         }
 
         if (saveMode == SaveMode.SEPARATE_FILE && Files.exists(outputPath)) {
-            throw new IOException("Output file already exists: " + outputPath);
+            throw new OperationException(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
         }
 
         return Files.createTempFile(parent, ".file-cipher-", ".tmp");
@@ -73,13 +75,13 @@ public abstract class FileCipher {
         Path normalizedTemp = tempFile.toAbsolutePath().normalize();
 
         if (!Files.isRegularFile(normalizedTemp)) {
-            throw new IOException("Temporary output file does not exist.");
+            throw new OperationException(OperationErrorCode.TEMPORARY_OUTPUT_MISSING);
         }
 
         Path destination = saveMode == SaveMode.REPLACE_ORIGINAL ? inputPath : outputPath;
 
         if (saveMode == SaveMode.SEPARATE_FILE && Files.exists(destination)) {
-            throw new IOException("Output file already exists: " + outputPath);
+            throw new OperationException(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
         }
 
         try {

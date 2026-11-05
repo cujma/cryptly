@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import operation.OperationErrorCode;
+import operation.OperationException;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
 
@@ -56,7 +58,7 @@ public class Decryptor extends FileCipher {
                 try {
                     input.readFully(header);
                 } catch (EOFException e) {
-                    throw new IOException("Encrypted file is incomplete.", e);
+                    throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_INCOMPLETE, e);
                 }
 
                 validateHeader(header);
@@ -80,15 +82,15 @@ public class Decryptor extends FileCipher {
                         try {
                             length = input.readInt();
                         } catch (EOFException e) {
-                            throw new IOException("Encrypted file is truncated: missing end marker.", e);
+                            throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_TRUNCATED, e);
                         }
 
                         if (length < 0 || length > CHUNK_SIZE) {
-                            throw new IOException("Invalid encrypted block length.");
+                            throw new OperationException(OperationErrorCode.INVALID_ENCRYPTED_BLOCK);
                         }
 
                         if (counter > 0xFFFF_FFFFL) {
-                            throw new IOException("Maximum number of blocks exceeded.");
+                            throw new OperationException(OperationErrorCode.TOO_MANY_BLOCKS);
                         }
 
                         if (length == 0) {
@@ -98,16 +100,16 @@ public class Decryptor extends FileCipher {
                                 input.readFully(finalTag);
 
                                 if (decryptChunk(finalTag, key, noncePrefix, header, counter, 0).length != 0) {
-                                    throw new IOException("Invalid encrypted file end marker.");
+                                    throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_END_MARKER_INVALID);
                                 }
                             } catch (EOFException e) {
-                                throw new IOException("Encrypted file has an incomplete end marker.", e);
+                                throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_INCOMPLETE, e);
                             } finally {
                                 Arrays.fill(finalTag, (byte) 0);
                             }
 
                             if (input.read() != -1) {
-                                throw new IOException("Unexpected data after the end of the encrypted file.");
+                                throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_HAS_TRAILING_DATA);
                             }
                             break;
                         }
@@ -121,7 +123,7 @@ public class Decryptor extends FileCipher {
 
                             try {
                                 if (plaintext.length != length) {
-                                    throw new IOException("Decrypted block has an invalid length.");
+                                    throw new OperationException(OperationErrorCode.INVALID_ENCRYPTED_BLOCK);
                                 }
 
                                 output.write(plaintext);
@@ -129,7 +131,7 @@ public class Decryptor extends FileCipher {
                                 Arrays.fill(plaintext, (byte) 0);
                             }
                         } catch (EOFException e) {
-                            throw new IOException("Encrypted file contains an incomplete block.", e);
+                            throw new OperationException(OperationErrorCode.ENCRYPTED_FILE_BLOCK_INCOMPLETE, e);
                         } finally {
                             Arrays.fill(encrypted, (byte) 0);
                         }
@@ -160,17 +162,18 @@ public class Decryptor extends FileCipher {
     private void validateHeader(byte[] header) throws IOException {
         for (int i = 0; i < MAGIC.length; i++) {
             if (header[i] != MAGIC[i]) {
-                throw new IOException("Unknown encrypted file format.");
+                throw new OperationException(OperationErrorCode.INVALID_ENCRYPTED_FILE);
             }
         }
 
         if (header[MAGIC.length] != VERSION) {
-            throw new IOException("Unsupported encrypted file version.");
+            throw new OperationException(OperationErrorCode.UNSUPPORTED_FORMAT);
         }
         payloadType = PayloadType.fromCode(header[PAYLOAD_TYPE_OFFSET]);
     }
 
-    private byte[] decryptChunk(byte[] encrypted, SecretKey key, byte[] noncePrefix, byte[] header, long counter, int length) throws GeneralSecurityException {
+    private byte[] decryptChunk(byte[] encrypted, SecretKey key, byte[] noncePrefix, byte[] header, long counter, int length)
+            throws java.io.IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         byte[] nonce = createNonce(noncePrefix, counter);
 
@@ -184,7 +187,7 @@ public class Decryptor extends FileCipher {
             return cipher.doFinal(encrypted);
 
         } catch (AEADBadTagException e) {
-            throw new AEADBadTagException("Authentication failed. The password may be incorrect");
+            throw new AEADBadTagException(OperationErrorCode.AUTHENTICATION_FAILED.name());
         } finally {
             Arrays.fill(nonce, (byte) 0);
         }
