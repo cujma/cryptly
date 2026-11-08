@@ -54,6 +54,7 @@ public class ProgressView extends VBox {
 
         backButton.setMaxWidth(Double.MAX_VALUE);
         backButton.getStyleClass().add("menu-button");
+        UiAnimations.installButtonFeedback(backButton);
         backButton.setDisable(true);
         backButton.setOnAction(event -> backRequested.run());
         VBox.setMargin(backButton, new Insets(8, 0, 16, 0));

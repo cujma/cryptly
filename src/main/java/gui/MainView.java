@@ -4,6 +4,8 @@ import operation.FileOperationController;
 import operation.OperationCallbacks;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -18,6 +20,7 @@ import javafx.stage.StageStyle;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 
 public class MainView extends VBox {
     private final FileOperationController operationController;
@@ -34,6 +37,7 @@ public class MainView extends VBox {
     private final RadioButton replaceOriginal = new RadioButton("Replace original file");
     private final RadioButton saveNew = new RadioButton("Save as a new file");
     private final Button actionButton = new Button("Encrypt");
+    private List<Node> formNodes;
 
     public MainView(FileOperationController operationController) {
         this.operationController = operationController;
@@ -47,6 +51,10 @@ public class MainView extends VBox {
         VBox.setVgrow(progressView, Priority.ALWAYS);
         progressView.setBackRequested(this::showForm);
         getChildren().setAll(buildHeading(), operationSelector(), pathSelectionView, saveSection(), passwordView, actionButton, progressView);
+        formNodes = getChildren().stream()
+                .filter(child -> child != progressView)
+                .toList();
+        Platform.runLater(() -> UiAnimations.enterAll(formNodes));
     }
 
     private void configureForm() {
@@ -58,6 +66,7 @@ public class MainView extends VBox {
         saveNew.setSelected(true);
 
         actionButton.getStyleClass().add("primary-button");
+        UiAnimations.installButtonFeedback(actionButton);
         actionButton.setMaxWidth(Double.MAX_VALUE);
         VBox.setMargin(actionButton, new Insets(8, 0, 2, 0));
         actionButton.setOnAction(event -> performOperation());
@@ -103,6 +112,7 @@ public class MainView extends VBox {
     private void updateOperationMode() {
         boolean encrypt = isEncryptSelected();
         operationTitle.setText(encrypt ? "Encrypt your data" : "Decrypt your data");
+        UiAnimations.enter(operationTitle);
         actionButton.setText(encrypt ? "Encrypt" : "Decrypt");
         passwordView.setConfirmationEnabled(encrypt);
         pathSelectionView.setFolderSelectionEnabled(encrypt);
@@ -169,9 +179,10 @@ public class MainView extends VBox {
     private void showProgress(String title) {
         operationRunning = true;
         progressView.start(title);
-        setFormVisible(false);
         progressView.setVisible(true);
         progressView.setManaged(true);
+        UiAnimations.enter(progressView);
+        UiAnimations.exitAll(formNodes);
     }
 
     private void operationFinished() {
@@ -182,7 +193,7 @@ public class MainView extends VBox {
     }
 
     private void setFormVisible(boolean visible) {
-        getChildren().stream().filter(child -> child != progressView).forEach(child -> {
+        formNodes.forEach(child -> {
                     child.setVisible(visible);
                     child.setManaged(visible);
                 });
@@ -245,12 +256,14 @@ public class MainView extends VBox {
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         dialog.setScene(scene);
         dialog.sizeToScene();
+        dialog.setOnShown(event -> UiAnimations.enter(frame));
         return dialog;
     }
 
     private Button dialogButton(String text, Stage dialog) {
         Button button = new Button(text);
         button.getStyleClass().add("dialog-button");
+        UiAnimations.installButtonFeedback(button);
         button.setOnAction(event -> dialog.close());
 
         return button;
@@ -264,6 +277,7 @@ public class MainView extends VBox {
         progressView.setVisible(false);
         progressView.setManaged(false);
         setFormVisible(true);
+        UiAnimations.enterAll(formNodes);
     }
 
     private Stage getStage() {

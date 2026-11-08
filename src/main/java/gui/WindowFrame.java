@@ -36,6 +36,7 @@ public class WindowFrame extends BorderPane {
         setClip(clip);
         setTop(createTitleBar(stage, titleText, showControls));
         setCenter(content);
+        stage.setOnShown(event -> UiAnimations.enter(this));
     }
 
     private BorderPane createTitleBar(Stage stage, String titleText, boolean showControls) {
@@ -55,7 +56,8 @@ public class WindowFrame extends BorderPane {
         Button minimize = new Button();
         minimize.setGraphic(minimizeSymbol);
         minimize.getStyleClass().addAll("window-button", "window-minimize-button");
-        minimize.setOnAction(event -> stage.setIconified(true));
+        minimize.setOnAction(event -> UiAnimations.minimize(WindowFrame.this, stage));
+        UiAnimations.installButtonFeedback(minimize);
 
         SVGPath closeSymbol = new SVGPath();
         closeSymbol.setContent("M 3 3 L 13 13 M 13 3 L 3 13");
@@ -67,7 +69,8 @@ public class WindowFrame extends BorderPane {
         Button close = new Button();
         close.setGraphic(closeSymbol);
         close.getStyleClass().addAll("window-button", "window-close-button");
-        close.setOnAction(event -> stage.close());
+        close.setOnAction(event -> UiAnimations.close(WindowFrame.this, stage));
+        UiAnimations.installButtonFeedback(close);
             controls.getChildren().addAll(minimize, close);
         }
 

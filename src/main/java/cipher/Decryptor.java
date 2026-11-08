@@ -35,8 +35,7 @@ public class Decryptor extends FileCipher {
     }
 
     public void decrypt(char[] password, SaveMode saveMode) throws IOException, GeneralSecurityException {
-        decrypt(password, saveMode, progress -> {
-        });
+        decrypt(password, saveMode, progress -> {});
     }
 
     public void decrypt(char[] password, SaveMode saveMode, DoubleConsumer progress) throws IOException, GeneralSecurityException {
@@ -172,8 +171,7 @@ public class Decryptor extends FileCipher {
         payloadType = PayloadType.fromCode(header[PAYLOAD_TYPE_OFFSET]);
     }
 
-    private byte[] decryptChunk(byte[] encrypted, SecretKey key, byte[] noncePrefix, byte[] header, long counter, int length)
-            throws java.io.IOException, GeneralSecurityException {
+    private byte[] decryptChunk(byte[] encrypted, SecretKey key, byte[] noncePrefix, byte[] header, long counter, int length) throws java.io.IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         byte[] nonce = createNonce(noncePrefix, counter);
 

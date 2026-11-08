@@ -242,6 +242,11 @@
     -fx-background-color: #303644;
 }
 
+.button:pressed {
+    -fx-background-color: #3a4351;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.18), 3, 0.2, 0, 1);
+}
+
 .menu-button:hover {
     -fx-background-color: #242832;
     -fx-border-color: #5794ff;
@@ -285,6 +290,11 @@
     -fx-background-color: #5794ff;
     -fx-border-color: #5794ff;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.34), 6, 0.2, 0, 2);
+}
+
+.primary-button:pressed {
+    -fx-background-color: #3f72c9;
+    -fx-border-color: #3f72c9;
 }
 
 .radio-button,
