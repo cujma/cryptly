@@ -227,6 +227,72 @@
     -fx-border-color: #5794ff;
 }
 
+.password-strength-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #858d9c;
+}
+
+.password-strength-label.very-weak {
+    -fx-text-fill: #e05252;
+}
+
+.password-strength-label.weak {
+    -fx-text-fill: #e58f3d;
+}
+
+.password-strength-label.medium {
+    -fx-text-fill: #d6b43c;
+}
+
+.password-strength-label.strong {
+    -fx-text-fill: #69b85a;
+}
+
+.password-strength-label.very-strong {
+    -fx-text-fill: #36c77a;
+}
+
+.password-strength-bar {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.password-strength-bar .track {
+    -fx-background-color: #242832;
+    -fx-background-radius: 6px;
+    -fx-background-insets: 0;
+}
+
+.password-strength-bar .bar {
+    -fx-background-radius: 6px;
+    -fx-background-insets: 0;
+    -fx-padding: 4px;
+}
+
+.password-strength-bar.empty .bar {
+    -fx-background-color: #454d5d;
+}
+
+.password-strength-bar.very-weak .bar {
+    -fx-background-color: #e05252;
+}
+
+.password-strength-bar.weak .bar {
+    -fx-background-color: #e58f3d;
+}
+
+.password-strength-bar.medium .bar {
+    -fx-background-color: #d6b43c;
+}
+
+.password-strength-bar.strong .bar {
+    -fx-background-color: #69b85a;
+}
+
+.password-strength-bar.very-strong .bar {
+    -fx-background-color: #36c77a;
+}
+
 .button {
     -fx-background-color: #242832;
     -fx-text-fill: #dce2ed;
@@ -297,8 +363,7 @@
     -fx-border-color: #3f72c9;
 }
 
-.radio-button,
-.check-box {
+.radio-button {
     -fx-text-fill: #c0c7d4;
     -fx-font-size: 11px;
 }
@@ -314,17 +379,6 @@
 }
 
 .radio-button:selected .radio .dot {
-    -fx-background-color: #5794ff;
-}
-
-.check-box .box {
-    -fx-background-color: #1b1f28;
-    -fx-border-color: #454d5d;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-}
-
-.check-box:selected .mark {
     -fx-background-color: #5794ff;
 }
 

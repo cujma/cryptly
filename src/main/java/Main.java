@@ -18,7 +18,7 @@ public class Main extends Application {
     public void start(Stage stage) {
         MainView view = new MainView(operationController);
 
-        Scene scene = new Scene(new WindowFrame(stage, view), 440, 672);
+        Scene scene = new Scene(new WindowFrame(stage, view), 440, 690);
         scene.setFill(Color.TRANSPARENT);
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 
@@ -28,7 +28,7 @@ public class Main extends Application {
         );
         stage.setTitle("Cryptly");
         stage.setMinWidth(420);
-        stage.setMinHeight(672);
+        stage.setMinHeight(690);
         stage.setResizable(false);
         stage.setScene(scene);
         stage.setOnCloseRequest(event -> {
