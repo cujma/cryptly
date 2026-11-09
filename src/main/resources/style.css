@@ -313,6 +313,23 @@
     -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.18), 3, 0.2, 0, 1);
 }
 
+.cancel-button {
+    -fx-background-color: #242832;
+    -fx-border-color: #454d5d;
+    -fx-text-fill: #dce2ed;
+}
+
+.cancel-button:hover {
+    -fx-background-color: #303644;
+    -fx-border-color: #c26a72;
+    -fx-text-fill: #f0c4c7;
+}
+
+.cancel-button:pressed {
+    -fx-background-color: #3a4351;
+    -fx-border-color: #c26a72;
+}
+
 .menu-button:hover {
     -fx-background-color: #242832;
     -fx-border-color: #5794ff;

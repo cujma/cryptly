@@ -2,6 +2,7 @@ package gui;
 
 import operation.FileOperationController;
 import operation.OperationCallbacks;
+import operation.OperationHandle;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.application.Platform;
@@ -26,6 +27,7 @@ public class MainView extends VBox {
     private final FileOperationController operationController;
     private final ErrorMessageProvider errorMessageProvider = new ErrorMessageProvider();
     private boolean operationRunning;
+    private OperationHandle operationHandle;
     private final PathSelectionView pathSelectionView = new PathSelectionView();
     private final PasswordView passwordView = new PasswordView();
     private final ProgressView progressView = new ProgressView();
@@ -50,6 +52,7 @@ public class MainView extends VBox {
         configureForm();
         VBox.setVgrow(progressView, Priority.ALWAYS);
         progressView.setBackRequested(this::showForm);
+        progressView.setCancelRequested(this::cancelOperation);
         getChildren().setAll(buildHeading(), operationSelector(), pathSelectionView, saveSection(), passwordView, actionButton, progressView);
         formNodes = getChildren().stream()
                 .filter(child -> child != progressView)
@@ -161,7 +164,13 @@ public class MainView extends VBox {
                 return;
             }
             showProgress(encrypt ? "Encrypting file..." : "Decrypting file...");
-            operationController.start(operation, password, callbacks);
+            if (!encrypt && !pathSelectionView.inputText().toLowerCase(java.util.Locale.ROOT).endsWith(".enc")) {
+                progressView.appendMessage(
+                        "The selected file does not use the .enc extension. "
+                                + "The decrypted file will use .dec to avoid overwriting the original."
+                );
+            }
+            operationHandle = operationController.start(operation, password, callbacks);
         } catch (Exception exception) {
             if (exception instanceof operation.OperationException
                     || exception instanceof IllegalArgumentException) {
@@ -187,9 +196,17 @@ public class MainView extends VBox {
 
     private void operationFinished() {
         operationRunning = false;
+        operationHandle = null;
         progressView.finish();
         pathSelectionView.clear();
         passwordView.clear();
+    }
+
+    private void cancelOperation() {
+        if (operationRunning && operationHandle != null) {
+            progressView.cancel();
+            operationHandle.cancel();
+        }
     }
 
     private void setFormVisible(boolean visible) {

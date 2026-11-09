@@ -18,6 +18,7 @@ import operation.OperationErrorCode;
 import operation.OperationException;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
+import java.util.function.BooleanSupplier;
 
 public class Decryptor extends FileCipher {
     private static final int HEADER_LENGTH = MAGIC.length + 2 + SALT_LENGTH + NONCE_PREFIX_LENGTH;
@@ -39,9 +40,14 @@ public class Decryptor extends FileCipher {
     }
 
     public void decrypt(char[] password, SaveMode saveMode, DoubleConsumer progress) throws IOException, GeneralSecurityException {
+        decrypt(password, saveMode, progress, () -> false);
+    }
+
+    public void decrypt(char[] password, SaveMode saveMode, DoubleConsumer progress, BooleanSupplier cancelled) throws IOException, GeneralSecurityException {
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(saveMode, "Save mode cannot be null");
         Objects.requireNonNull(progress, "Progress callback cannot be null");
+        Objects.requireNonNull(cancelled, "Cancellation callback cannot be null");
 
         Path tempFile = createTempOutputFile(saveMode);
         long totalBytes = Files.size(inputPath);
@@ -76,6 +82,9 @@ public class Decryptor extends FileCipher {
                     long counter = 0;
 
                     while (true) {
+                        if (cancelled.getAsBoolean()) {
+                            throw new java.util.concurrent.CancellationException();
+                        }
                         int length;
 
                         try {

@@ -45,15 +45,15 @@ public final class FileOperationController {
         return new PreparedOperation(input, output, encrypt, saveMode);
     }
 
-    public void start(PreparedOperation operation, char[] password, OperationCallbacks callbacks) {
+    public OperationHandle start(PreparedOperation operation, char[] password, OperationCallbacks callbacks) {
         Objects.requireNonNull(operation, "Operation cannot be null");
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(callbacks, "Callbacks cannot be null");
 
         if (operation.encrypt()) {
-            handler.encrypt(operation.input(), operation.output(), password, operation.saveMode(), callbacks);
+            return handler.encrypt(operation.input(), operation.output(), password, operation.saveMode(), callbacks);
         } else {
-            handler.decrypt(operation.input(), operation.output(), password, operation.saveMode(), callbacks);
+            return handler.decrypt(operation.input(), operation.output(), password, operation.saveMode(), callbacks);
         }
     }
 

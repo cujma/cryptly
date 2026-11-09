@@ -17,6 +17,7 @@ import operation.OperationErrorCode;
 import operation.OperationException;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
+import java.util.function.BooleanSupplier;
 
 public class Encryptor extends FileCipher {
     private final SecureRandom secureRandom = new SecureRandom();
@@ -37,9 +38,14 @@ public class Encryptor extends FileCipher {
     }
 
     public void encrypt(char[] password, SaveMode saveMode, DoubleConsumer progress) throws IOException, GeneralSecurityException {
+        encrypt(password, saveMode, progress, () -> false);
+    }
+
+    public void encrypt(char[] password, SaveMode saveMode, DoubleConsumer progress, BooleanSupplier cancelled) throws IOException, GeneralSecurityException {
         Objects.requireNonNull(password, "Password cannot be null");
         Objects.requireNonNull(saveMode, "Save mode cannot be null");
         Objects.requireNonNull(progress, "Progress callback cannot be null");
+        Objects.requireNonNull(cancelled, "Cancellation callback cannot be null");
 
         byte[] salt = new byte[SALT_LENGTH];
         byte[] noncePrefix = new byte[NONCE_PREFIX_LENGTH];
@@ -65,6 +71,9 @@ public class Encryptor extends FileCipher {
                 long counter = 0;
 
                 while (true) {
+                    if (cancelled.getAsBoolean()) {
+                        throw new java.util.concurrent.CancellationException();
+                    }
                     int length = readChunk(input, buffer);
 
                     if (length == 0) {

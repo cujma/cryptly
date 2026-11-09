@@ -10,6 +10,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -21,6 +22,10 @@ public final class DirectoryArchive {
     }
 
     public static void create(Path directory, Path archive) throws IOException {
+        create(directory, archive, () -> false);
+    }
+
+    public static void create(Path directory, Path archive, BooleanSupplier cancelled) throws IOException {
         Path root = directory.toAbsolutePath().normalize();
         if (!Files.isDirectory(root) || Files.isSymbolicLink(root)) {
             throw new OperationException(OperationErrorCode.DIRECTORY_NOT_ACCESSIBLE);
@@ -31,10 +36,11 @@ public final class DirectoryArchive {
             Files.walkFileTree(root, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    checkCancelled(cancelled);
                     if (Files.isSymbolicLink(file) || !attrs.isRegularFile()) {
                         throw new OperationException(OperationErrorCode.UNSUPPORTED_DIRECTORY_CONTENT);
                     }
-                    addFile(root, file, zip);
+                    addFile(root, file, zip, cancelled);
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -59,6 +65,10 @@ public final class DirectoryArchive {
     }
 
     public static void extract(Path archive, Path destination) throws IOException {
+        extract(archive, destination, () -> false);
+    }
+
+    public static void extract(Path archive, Path destination, BooleanSupplier cancelled) throws IOException {
         Path root = destination.toAbsolutePath().normalize();
         Files.createDirectories(root);
         Set<Path> extracted = new HashSet<>();
@@ -67,6 +77,7 @@ public final class DirectoryArchive {
              ZipInputStream zip = new ZipInputStream(input)) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
+                checkCancelled(cancelled);
                 Path target = safeTarget(root, entry.getName());
                 if (!extracted.add(target)) {
                     throw new OperationException(OperationErrorCode.ARCHIVE_DUPLICATE_ENTRY);
@@ -84,7 +95,12 @@ public final class DirectoryArchive {
                     }
                     Files.createDirectories(parent);
                     try (OutputStream output = Files.newOutputStream(target)) {
-                        zip.transferTo(output);
+                        byte[] buffer = new byte[64 * 1024];
+                        int read;
+                        while ((read = zip.read(buffer)) != -1) {
+                            checkCancelled(cancelled);
+                            output.write(buffer, 0, read);
+                        }
                     }
                 }
                 zip.closeEntry();
@@ -124,13 +140,24 @@ public final class DirectoryArchive {
         return false;
     }
 
-    private static void addFile(Path root, Path file, ZipOutputStream zip) throws IOException {
+    private static void addFile(Path root, Path file, ZipOutputStream zip, BooleanSupplier cancelled) throws IOException {
         String name = root.relativize(file).toString().replace('\\', '/');
         zip.putNextEntry(new ZipEntry(name));
         try (InputStream input = Files.newInputStream(file)) {
-            input.transferTo(zip);
+            byte[] buffer = new byte[64 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                checkCancelled(cancelled);
+                zip.write(buffer, 0, read);
+            }
         } finally {
             zip.closeEntry();
+        }
+    }
+
+    private static void checkCancelled(BooleanSupplier cancelled) {
+        if (cancelled.getAsBoolean()) {
+            throw new java.util.concurrent.CancellationException();
         }
     }
 }

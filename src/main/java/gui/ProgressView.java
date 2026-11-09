@@ -16,7 +16,11 @@ public class ProgressView extends VBox {
     private final ProgressBar progressBar = new ProgressBar();
     private final TextArea messagesArea = new TextArea();
     private final Button backButton = new Button("Back to file selection");
+    private final Button cancelButton = new Button("Cancel");
+    private boolean cancelled;
     private Runnable backRequested = () -> {
+    };
+    private Runnable cancelRequested = () -> {
     };
 
     public ProgressView() {
@@ -59,13 +63,25 @@ public class ProgressView extends VBox {
         backButton.setOnAction(event -> backRequested.run());
         VBox.setMargin(backButton, new Insets(8, 0, 16, 0));
 
+        cancelButton.setMaxWidth(Double.MAX_VALUE);
+        cancelButton.getStyleClass().add("cancel-button");
+        UiAnimations.installButtonFeedback(cancelButton);
+        cancelButton.setOnAction(event -> {
+            cancelButton.setDisable(true);
+            cancelRequested.run();
+        });
+
         getChildren().setAll(
-                heading(), progressSection, messagesSection, backButton
+                heading(), progressSection, messagesSection, cancelButton, backButton
         );
     }
 
     public void setBackRequested(Runnable backRequested) {
         this.backRequested = backRequested;
+    }
+
+    public void setCancelRequested(Runnable cancelRequested) {
+        this.cancelRequested = cancelRequested;
     }
 
     public void start(String title) {
@@ -74,6 +90,8 @@ public class ProgressView extends VBox {
         messagesArea.clear();
         messagesArea.appendText("[INFO] Operation started.\n");
         progressBar.setProgress(0);
+        cancelled = false;
+        cancelButton.setDisable(false);
         backButton.setDisable(true);
     }
 
@@ -95,8 +113,17 @@ public class ProgressView extends VBox {
     }
 
     public void finish() {
-        progressBar.setProgress(1.0);
+        if (!cancelled) {
+            progressBar.setProgress(1.0);
+        }
+        cancelButton.setDisable(true);
         backButton.setDisable(false);
+    }
+
+    public void cancel() {
+        cancelled = true;
+        cancelButton.setDisable(true);
+        status.setText("Cancelling...");
     }
 
     private VBox heading() {

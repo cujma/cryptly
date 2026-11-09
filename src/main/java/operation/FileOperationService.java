@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.concurrent.CancellationException;
 
 public final class FileOperationService implements FileOperationHandler {
     private enum Operation {
@@ -24,13 +26,13 @@ public final class FileOperationService implements FileOperationHandler {
     }
 
     @Override
-    public void encrypt(Path input, Path output, char[] password, SaveMode saveMode, OperationCallbacks callbacks) {
-        start(input, output, password, saveMode, Operation.ENCRYPT, callbacks);
+    public OperationHandle encrypt(Path input, Path output, char[] password, SaveMode saveMode, OperationCallbacks callbacks) {
+        return start(input, output, password, saveMode, Operation.ENCRYPT, callbacks);
     }
 
     @Override
-    public void decrypt(Path input, Path output, char[] password, SaveMode saveMode, OperationCallbacks callbacks) {
-        start(input, output, password, saveMode, Operation.DECRYPT, callbacks);
+    public OperationHandle decrypt(Path input, Path output, char[] password, SaveMode saveMode, OperationCallbacks callbacks) {
+        return start(input, output, password, saveMode, Operation.DECRYPT, callbacks);
     }
 
     void executeSynchronously(Path input, Path output, char[] password, SaveMode saveMode, boolean encrypt) throws IOException, GeneralSecurityException {
@@ -42,13 +44,13 @@ public final class FileOperationService implements FileOperationHandler {
         char[] passwordChars = password.clone();
 
         try {
-            executeOperation(input, output, passwordChars, saveMode, encrypt ? Operation.ENCRYPT : Operation.DECRYPT, progress -> {});
+            executeOperation(input, output, passwordChars, saveMode, encrypt ? Operation.ENCRYPT : Operation.DECRYPT, progress -> {}, () -> false);
         } finally {
             Arrays.fill(passwordChars, '\0');
         }
     }
 
-    private void start(Path input, Path output, char[] password, SaveMode saveMode, Operation operation, OperationCallbacks callbacks) {
+    private OperationHandle start(Path input, Path output, char[] password, SaveMode saveMode, Operation operation, OperationCallbacks callbacks) {
         Objects.requireNonNull(input, "Input path cannot be null");
         Objects.requireNonNull(output, "Output path cannot be null");
         Objects.requireNonNull(password, "Password cannot be null");
@@ -64,7 +66,7 @@ public final class FileOperationService implements FileOperationHandler {
                     updateMessage(startMessage(operation));
 
                     try {
-                        executeOperation(input, output, passwordChars, saveMode, operation, progress -> updateProgress(progress, 1.0));
+                        executeOperation(input, output, passwordChars, saveMode, operation, progress -> updateProgress(progress, 1.0), this::isCancelled);
                     } catch (OperationException exception) {
                         throw exception;
                     } catch (IOException | GeneralSecurityException exception) {
@@ -100,10 +102,15 @@ public final class FileOperationService implements FileOperationHandler {
             callbacks.onError().accept(errorMessage(error));
             callbacks.onFinished().run();
         });
+        task.setOnCancelled(event -> {
+            callbacks.onStatus().accept("Operation cancelled.");
+            callbacks.onFinished().run();
+        });
 
         Thread thread = new Thread(task, operation == Operation.ENCRYPT ? "file-encryption-task" : "file-decryption-task");
         thread.setDaemon(true);
         thread.start();
+        return task::cancel;
     }
 
     private String startMessage(Operation operation) {
@@ -121,7 +128,8 @@ public final class FileOperationService implements FileOperationHandler {
         return OperationErrorCode.UNKNOWN_ERROR.name();
     }
 
-    private void executeOperation(Path input, Path output, char[] password, SaveMode saveMode, Operation operation, DoubleConsumer progress) throws IOException, GeneralSecurityException {
+    private void executeOperation(Path input, Path output, char[] password, SaveMode saveMode, Operation operation, DoubleConsumer progress, BooleanSupplier cancelled) throws IOException, GeneralSecurityException {
+        checkCancelled(cancelled);
         if (operation == Operation.DECRYPT && !Files.isRegularFile(input)) {
             throw new OperationException(OperationErrorCode.DIRECTORY_CANNOT_BE_DECRYPTED);
         }
@@ -129,8 +137,8 @@ public final class FileOperationService implements FileOperationHandler {
         if (operation == Operation.ENCRYPT && Files.isDirectory(input)) {
             Path archive = Files.createTempFile(output.getParent(), ".file-archive-", ".zip");
             try {
-                DirectoryArchive.create(input, archive);
-                new Encryptor(archive, output, PayloadType.DIRECTORY).encrypt(password, SaveMode.SEPARATE_FILE, progress);
+                DirectoryArchive.create(input, archive, cancelled);
+                new Encryptor(archive, output, PayloadType.DIRECTORY).encrypt(password, SaveMode.SEPARATE_FILE, progress, cancelled);
                 if (saveMode == SaveMode.REPLACE_ORIGINAL) {
                     deleteDirectory(input);
                 }
@@ -146,9 +154,9 @@ public final class FileOperationService implements FileOperationHandler {
             Path restored = Files.createTempDirectory(output.getParent(), ".file-restored-");
             try {
                 Decryptor decryptor = new Decryptor(input, archive);
-                decryptor.decrypt(password, SaveMode.SEPARATE_FILE, progress);
+                decryptor.decrypt(password, SaveMode.SEPARATE_FILE, progress, cancelled);
                 if (decryptor.payloadType() == PayloadType.DIRECTORY) {
-                    DirectoryArchive.extract(archive, restored);
+                    DirectoryArchive.extract(archive, restored, cancelled);
                     Path directoryOutput = saveMode == SaveMode.SEPARATE_FILE ? output : directoryOutput(input);
                     if (Files.exists(directoryOutput)) {
                         throw new OperationException(OperationErrorCode.OUTPUT_ALREADY_EXISTS);
@@ -176,9 +184,15 @@ public final class FileOperationService implements FileOperationHandler {
         }
 
         if (operation == Operation.ENCRYPT) {
-            new Encryptor(input, output).encrypt(password, saveMode, progress);
+            new Encryptor(input, output).encrypt(password, saveMode, progress, cancelled);
         } else {
-            new Decryptor(input, output).decrypt(password, saveMode, progress);
+            new Decryptor(input, output).decrypt(password, saveMode, progress, cancelled);
+        }
+    }
+
+    private void checkCancelled(BooleanSupplier cancelled) {
+        if (cancelled.getAsBoolean()) {
+            throw new CancellationException();
         }
     }
 
